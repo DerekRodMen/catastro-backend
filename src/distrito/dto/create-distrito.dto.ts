@@ -10,7 +10,6 @@ export class CreateDistritoDto {
   @ApiProperty({
     example: 'Grecia',
     description: 'Nombre del distrito',
-    maxLength: 100,
   })
   @IsString()
   @IsNotEmpty()
@@ -22,6 +21,5 @@ export class CreateDistritoDto {
     description: 'Número del distrito',
   })
   @IsInt()
-  @IsNotEmpty()
   numero_distrito!: number;
 }

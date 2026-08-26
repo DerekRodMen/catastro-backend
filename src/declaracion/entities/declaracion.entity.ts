@@ -8,20 +8,33 @@ import {
 
 import { Parque } from '../../parque/entities/parque.entity';
 
-@Entity('DECLARACION')
+@Entity({
+  name: 'DECLARACION',
+})
 export class Declaracion {
-  @PrimaryGeneratedColumn()
+  @PrimaryGeneratedColumn({
+    name: 'id_declaracion',
+  })
   id_declaracion!: number;
 
   @Column({
+    name: 'fecha_declaracion',
     type: 'date',
   })
   fecha_declaracion!: Date;
 
   @Column({
-    type: 'bit',
+    name: 'estado_declaracion',
+    type: 'varchar',
+    length: 50,
   })
-  vigente!: boolean;
+  estado_declaracion!: string;
+
+  @Column({
+    name: 'id_parque',
+    type: 'int',
+  })
+  id_parque!: number;
 
   @ManyToOne(
     () => Parque,

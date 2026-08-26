@@ -1,31 +1,43 @@
+import { ApiProperty } from '@nestjs/swagger';
 import {
   IsBoolean,
   IsEmail,
   IsNotEmpty,
-  IsOptional,
   IsString,
   MaxLength,
-  MinLength,
 } from 'class-validator';
 
 export class CreateUsuarioDto {
+  @ApiProperty({
+    example: 'Administrador',
+    description: 'Nombre del usuario',
+  })
   @IsString()
   @IsNotEmpty()
   @MaxLength(100)
   nombre_usuario!: string;
 
+  @ApiProperty({
+    example: 'admin@catastro.com',
+    description: 'Correo electrónico del usuario',
+  })
   @IsEmail()
-  @IsNotEmpty()
   @MaxLength(150)
   correo!: string;
 
+  @ApiProperty({
+    example: 'Admin123*',
+    description: 'Contraseña del usuario',
+  })
   @IsString()
   @IsNotEmpty()
-  @MinLength(6)
-  @MaxLength(100)
+  @MaxLength(255)
   password!: string;
 
+  @ApiProperty({
+    example: true,
+    description: 'Indica si el usuario está activo',
+  })
   @IsBoolean()
-  @IsOptional()
-  estado?: boolean;
+  estado!: boolean;
 }

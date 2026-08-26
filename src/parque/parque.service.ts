@@ -4,32 +4,42 @@ import {
 } from '@nestjs/common';
 
 import { InjectRepository } from '@nestjs/typeorm';
+
 import { Repository } from 'typeorm';
 
 import { Parque } from './entities/parque.entity';
-import { CreateParqueDto } from './dto/create-parque.dto';
-import { UpdateParqueDto } from './dto/update-parque.dto';
 
 import { Distrito } from '../distrito/entities/distrito.entity';
-import { Asociacion } from '../asociacion/entities/asociacion.entity';
+
+import { Encargado } from '../encargado/entities/encargado.entity';
+
+import { CreateParqueDto } from './dto/create-parque.dto';
+
+import { UpdateParqueDto } from './dto/update-parque.dto';
 
 @Injectable()
 export class ParqueService {
   constructor(
     @InjectRepository(Parque)
-    private readonly parqueRepository: Repository<Parque>,
+    private readonly parqueRepository:
+      Repository<Parque>,
 
     @InjectRepository(Distrito)
-    private readonly distritoRepository: Repository<Distrito>,
+    private readonly distritoRepository:
+      Repository<Distrito>,
 
-    @InjectRepository(Asociacion)
-    private readonly asociacionRepository: Repository<Asociacion>,
+    @InjectRepository(Encargado)
+    private readonly encargadoRepository:
+      Repository<Encargado>,
   ) {}
+
+  // ============================
+  // CREAR
+  // ============================
 
   async create(
     createParqueDto: CreateParqueDto,
-  ): Promise<Parque> {
-
+  ) {
     const distrito =
       await this.distritoRepository.findOne({
         where: {
@@ -40,21 +50,21 @@ export class ParqueService {
 
     if (!distrito) {
       throw new NotFoundException(
-        `No existe el distrito con ID ${createParqueDto.id_distrito}`,
+        `No se encontró el distrito con ID ${createParqueDto.id_distrito}`,
       );
     }
 
-    const asociacion =
-      await this.asociacionRepository.findOne({
+    const encargado =
+      await this.encargadoRepository.findOne({
         where: {
-          id_asociacion:
-            createParqueDto.id_asociacion,
+          id_encargado:
+            createParqueDto.id_encargado,
         },
       });
 
-    if (!asociacion) {
+    if (!encargado) {
       throw new NotFoundException(
-        `No existe la asociación con ID ${createParqueDto.id_asociacion}`,
+        `No se encontró el encargado con ID ${createParqueDto.id_encargado}`,
       );
     }
 
@@ -85,42 +95,57 @@ export class ParqueService {
           createParqueDto.inversion,
 
         fecha_inversion:
-          new Date(
-            createParqueDto.fecha_inversion,
-          ),
+          createParqueDto.fecha_inversion,
+
+        id_distrito:
+          createParqueDto.id_distrito,
+
+        id_encargado:
+          createParqueDto.id_encargado,
 
         distrito,
 
-        asociacion,
+        encargado,
       });
 
-    return await this.parqueRepository.save(
+    return this.parqueRepository.save(
       parque,
     );
   }
 
-  async findAll(): Promise<Parque[]> {
-    return await this.parqueRepository.find({
+  // ============================
+  // LISTAR TODOS
+  // ============================
+
+  async findAll() {
+    return this.parqueRepository.find({
       relations: {
         distrito: true,
-        asociacion: true,
-        convenios: true,
-        declaraciones: true,
+        encargado: true,
+      },
+
+      order: {
+        id_parque: 'ASC',
       },
     });
   }
 
-  async findOne(id: number): Promise<Parque> {
+  // ============================
+  // BUSCAR UNO
+  // ============================
+
+  async findOne(
+    id: number,
+  ) {
     const parque =
       await this.parqueRepository.findOne({
         where: {
           id_parque: id,
         },
+
         relations: {
           distrito: true,
-          asociacion: true,
-          convenios: true,
-          declaraciones: true,
+          encargado: true,
         },
       });
 
@@ -133,11 +158,14 @@ export class ParqueService {
     return parque;
   }
 
+  // ============================
+  // ACTUALIZAR
+  // ============================
+
   async update(
     id: number,
     updateParqueDto: UpdateParqueDto,
-  ): Promise<Parque> {
-
+  ) {
     const parque =
       await this.findOne(id);
 
@@ -155,51 +183,136 @@ export class ParqueService {
 
       if (!distrito) {
         throw new NotFoundException(
-          `No existe el distrito con ID ${updateParqueDto.id_distrito}`,
+          `No se encontró el distrito con ID ${updateParqueDto.id_distrito}`,
         );
       }
 
-      parque.distrito = distrito;
+      parque.id_distrito =
+        updateParqueDto.id_distrito;
+
+      parque.distrito =
+        distrito;
     }
 
     if (
-      updateParqueDto.id_asociacion !==
+      updateParqueDto.id_encargado !==
       undefined
     ) {
-      const asociacion =
-        await this.asociacionRepository.findOne({
+      const encargado =
+        await this.encargadoRepository.findOne({
           where: {
-            id_asociacion:
-              updateParqueDto.id_asociacion,
+            id_encargado:
+              updateParqueDto.id_encargado,
           },
         });
 
-      if (!asociacion) {
+      if (!encargado) {
         throw new NotFoundException(
-          `No existe la asociación con ID ${updateParqueDto.id_asociacion}`,
+          `No se encontró el encargado con ID ${updateParqueDto.id_encargado}`,
         );
       }
 
-      parque.asociacion = asociacion;
+      parque.id_encargado =
+        updateParqueDto.id_encargado;
+
+      parque.encargado =
+        encargado;
     }
 
-    Object.assign(parque, {
-      ...updateParqueDto,
-      id_distrito: undefined,
-      id_asociacion: undefined,
-    });
+    if (
+      updateParqueDto.ubicacion !==
+      undefined
+    ) {
+      parque.ubicacion =
+        updateParqueDto.ubicacion;
+    }
 
-    return await this.parqueRepository.save(
+    if (
+      updateParqueDto.numero_finca !==
+      undefined
+    ) {
+      parque.numero_finca =
+        updateParqueDto.numero_finca;
+    }
+
+    if (
+      updateParqueDto.area !==
+      undefined
+    ) {
+      parque.area =
+        updateParqueDto.area;
+    }
+
+    if (
+      updateParqueDto.numero_plano !==
+      undefined
+    ) {
+      parque.numero_plano =
+        updateParqueDto.numero_plano;
+    }
+
+    if (
+      updateParqueDto.visado !==
+      undefined
+    ) {
+      parque.visado =
+        updateParqueDto.visado;
+    }
+
+    if (
+      updateParqueDto.estado !==
+      undefined
+    ) {
+      parque.estado =
+        updateParqueDto.estado;
+    }
+
+    if (
+      updateParqueDto.descripcion_inversion !==
+      undefined
+    ) {
+      parque.descripcion_inversion =
+        updateParqueDto.descripcion_inversion;
+    }
+
+    if (
+      updateParqueDto.inversion !==
+      undefined
+    ) {
+      parque.inversion =
+        updateParqueDto.inversion;
+    }
+
+    if (
+      updateParqueDto.fecha_inversion !==
+      undefined
+    ) {
+      parque.fecha_inversion =
+        updateParqueDto.fecha_inversion;
+    }
+
+    return this.parqueRepository.save(
       parque,
     );
   }
 
-  async remove(id: number): Promise<void> {
+  // ============================
+  // ELIMINAR
+  // ============================
+
+  async remove(
+    id: number,
+  ) {
     const parque =
       await this.findOne(id);
 
     await this.parqueRepository.remove(
       parque,
     );
+
+    return {
+      message:
+        'Parque eliminado correctamente',
+    };
   }
 }

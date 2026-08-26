@@ -7,29 +7,37 @@ import {
   ParseIntPipe,
   Patch,
   Post,
-  UseGuards,
 } from '@nestjs/common';
 
-import { ApiTags } from '@nestjs/swagger';
+import {
+  ApiTags,
+} from '@nestjs/swagger';
 
-import { DeclaracionService } from './declaracion.service';
-import { CreateDeclaracionDto } from './dto/create-declaracion.dto';
-import { UpdateDeclaracionDto } from './dto/update-declaracion.dto';
+import {
+  DeclaracionService,
+} from './declaracion.service';
 
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import {
+  CreateDeclaracionDto,
+} from './dto/create-declaracion.dto';
+
+import {
+  UpdateDeclaracionDto,
+} from './dto/update-declaracion.dto';
 
 @ApiTags('Declaraciones')
 @Controller('declaraciones')
 export class DeclaracionController {
   constructor(
-    private readonly declaracionService: DeclaracionService,
+    private readonly declaracionService:
+      DeclaracionService,
   ) {}
 
   @Post()
-  @UseGuards(JwtAuthGuard)
   create(
     @Body()
-    createDeclaracionDto: CreateDeclaracionDto,
+    createDeclaracionDto:
+      CreateDeclaracionDto,
   ) {
     return this.declaracionService.create(
       createDeclaracionDto,
@@ -43,20 +51,28 @@ export class DeclaracionController {
 
   @Get(':id')
   findOne(
-    @Param('id', ParseIntPipe)
+    @Param(
+      'id',
+      ParseIntPipe,
+    )
     id: number,
   ) {
-    return this.declaracionService.findOne(id);
+    return this.declaracionService.findOne(
+      id,
+    );
   }
 
   @Patch(':id')
-  @UseGuards(JwtAuthGuard)
   update(
-    @Param('id', ParseIntPipe)
+    @Param(
+      'id',
+      ParseIntPipe,
+    )
     id: number,
 
     @Body()
-    updateDeclaracionDto: UpdateDeclaracionDto,
+    updateDeclaracionDto:
+      UpdateDeclaracionDto,
   ) {
     return this.declaracionService.update(
       id,
@@ -65,11 +81,15 @@ export class DeclaracionController {
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard)
   remove(
-    @Param('id', ParseIntPipe)
+    @Param(
+      'id',
+      ParseIntPipe,
+    )
     id: number,
   ) {
-    return this.declaracionService.remove(id);
+    return this.declaracionService.remove(
+      id,
+    );
   }
 }

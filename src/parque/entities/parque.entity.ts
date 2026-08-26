@@ -8,28 +8,35 @@ import {
 } from 'typeorm';
 
 import { Distrito } from '../../distrito/entities/distrito.entity';
-import { Asociacion } from '../../asociacion/entities/asociacion.entity';
+import { Encargado } from '../../encargado/entities/encargado.entity';
 import { Convenio } from '../../convenio/entities/convenio.entity';
 import { Declaracion } from '../../declaracion/entities/declaracion.entity';
 
-@Entity('PARQUE')
+@Entity({
+  name: 'PARQUE',
+})
 export class Parque {
-  @PrimaryGeneratedColumn()
+  @PrimaryGeneratedColumn({
+    name: 'id_parque',
+  })
   id_parque!: number;
 
   @Column({
+    name: 'ubicacion',
     type: 'varchar',
     length: 200,
   })
   ubicacion!: string;
 
   @Column({
+    name: 'numero_finca',
     type: 'varchar',
     length: 50,
   })
   numero_finca!: string;
 
   @Column({
+    name: 'area',
     type: 'decimal',
     precision: 12,
     scale: 2,
@@ -37,30 +44,35 @@ export class Parque {
   area!: number;
 
   @Column({
+    name: 'numero_plano',
     type: 'varchar',
     length: 50,
   })
   numero_plano!: string;
 
   @Column({
+    name: 'visado',
     type: 'varchar',
     length: 50,
   })
   visado!: string;
 
   @Column({
+    name: 'estado',
     type: 'varchar',
     length: 50,
   })
   estado!: string;
 
   @Column({
+    name: 'descripcion_inversion',
     type: 'varchar',
     length: 500,
   })
   descripcion_inversion!: string;
 
   @Column({
+    name: 'inversion',
     type: 'decimal',
     precision: 12,
     scale: 2,
@@ -68,9 +80,26 @@ export class Parque {
   inversion!: number;
 
   @Column({
+    name: 'fecha_inversion',
     type: 'date',
   })
-  fecha_inversion!: Date;
+  fecha_inversion!: string;
+
+  @Column({
+    name: 'id_distrito',
+    type: 'int',
+  })
+  id_distrito!: number;
+
+  @Column({
+    name: 'id_encargado',
+    type: 'int',
+  })
+  id_encargado!: number;
+
+  // ============================
+  // RELACIÓN CON DISTRITO
+  // ============================
 
   @ManyToOne(
     () => Distrito,
@@ -81,24 +110,36 @@ export class Parque {
   })
   distrito!: Distrito;
 
+  // ============================
+  // RELACIÓN CON ENCARGADO
+  // ============================
+
   @ManyToOne(
-    () => Asociacion,
-    (asociacion) => asociacion.parques,
+    () => Encargado,
+    (encargado) => encargado.parques,
   )
   @JoinColumn({
-    name: 'id_asociacion',
+    name: 'id_encargado',
   })
-  asociacion!: Asociacion;
+  encargado!: Encargado;
+
+  // ============================
+  // RELACIÓN CON CONVENIOS
+  // ============================
 
   @OneToMany(
-  () => Convenio,
-  (convenio) => convenio.parque,
-)
-convenios!: Convenio[];
+    () => Convenio,
+    (convenio) => convenio.parque,
+  )
+  convenios!: Convenio[];
 
-@OneToMany(
-  () => Declaracion,
-  (declaracion) => declaracion.parque,
-)
-declaraciones!: Declaracion[];
+  // ============================
+  // RELACIÓN CON DECLARACIONES
+  // ============================
+
+  @OneToMany(
+    () => Declaracion,
+    (declaracion) => declaracion.parque,
+  )
+  declaraciones!: Declaracion[];
 }

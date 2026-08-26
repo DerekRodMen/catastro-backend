@@ -12,8 +12,9 @@ export class Usuario {
   @Column({
     type: 'varchar',
     length: 100,
+    nullable: true,
   })
-  nombre_usuario!: string;
+  nombre_usuario!: string | null;
 
   @Column({
     type: 'varchar',
@@ -25,12 +26,26 @@ export class Usuario {
   @Column({
     type: 'varchar',
     length: 255,
+    nullable: true,
   })
-  password!: string;
+  password!: string | null;
 
   @Column({
     type: 'bit',
-    default: true,
+    default: false,
   })
   estado!: boolean;
+
+  @Column({
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+  })
+  token_activacion!: string | null;
+
+  @Column({
+    type: 'datetime2',
+    nullable: true,
+  })
+  token_expiracion!: Date | null;
 }
