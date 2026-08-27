@@ -7,11 +7,8 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  UseGuards,
 } from '@nestjs/common';
-
-import {
-  ApiTags,
-} from '@nestjs/swagger';
 
 import {
   EncargadoService,
@@ -25,8 +22,12 @@ import {
   UpdateEncargadoDto,
 } from './dto/update-encargado.dto';
 
-@ApiTags('Encargados')
+import {
+  JwtAuthGuard,
+} from '../auth/guards/jwt-auth.guard';
+
 @Controller('encargados')
+@UseGuards(JwtAuthGuard)
 export class EncargadoController {
   constructor(
     private readonly encargadoService:

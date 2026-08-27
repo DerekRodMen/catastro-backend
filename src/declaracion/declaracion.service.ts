@@ -39,9 +39,125 @@ export class DeclaracionService {
       Repository<Parque>,
   ) {}
 
-  // ============================
-  // CREAR DECLARACIÓN
-  // ============================
+  // ==========================================
+  // CREAR FECHA LOCAL SIN UTC
+  // ==========================================
+
+  private crearFechaLocal(
+    fecha: string,
+  ): Date {
+    const [
+      anio,
+      mes,
+      dia,
+    ] = fecha
+      .split('-')
+      .map(Number);
+
+    return new Date(
+      anio,
+      mes - 1,
+      dia,
+    );
+  }
+
+  // ==========================================
+  // CALCULAR VENCIMIENTO +5 AÑOS
+  // ==========================================
+
+  private calcularFechaVencimiento(
+    fechaDeclaracion: string | Date,
+  ): Date {
+    const fecha =
+      typeof fechaDeclaracion === 'string'
+        ? this.crearFechaLocal(
+            fechaDeclaracion,
+          )
+        : new Date(
+            fechaDeclaracion.getFullYear(),
+            fechaDeclaracion.getMonth(),
+            fechaDeclaracion.getDate(),
+          );
+
+    const anio =
+      fecha.getFullYear();
+
+    const mes =
+      fecha.getMonth();
+
+    const dia =
+      fecha.getDate();
+
+    const nuevoAnio =
+      anio + 5;
+
+    const ultimoDiaMes =
+      new Date(
+        nuevoAnio,
+        mes + 1,
+        0,
+      ).getDate();
+
+    const diaAjustado =
+      Math.min(
+        dia,
+        ultimoDiaMes,
+      );
+
+    return new Date(
+      nuevoAnio,
+      mes,
+      diaAjustado,
+    );
+  }
+
+  // ==========================================
+  // CALCULAR ESTADO
+  // ==========================================
+
+  private calcularEstadoDeclaracion(
+    fechaVencimiento: string | Date,
+  ): string {
+    const vencimiento =
+      typeof fechaVencimiento === 'string'
+        ? this.crearFechaLocal(
+            fechaVencimiento,
+          )
+        : new Date(
+            fechaVencimiento.getFullYear(),
+            fechaVencimiento.getMonth(),
+            fechaVencimiento.getDate(),
+          );
+
+    const hoy =
+      new Date();
+
+    hoy.setHours(
+      0,
+      0,
+      0,
+      0,
+    );
+
+    vencimiento.setHours(
+      0,
+      0,
+      0,
+      0,
+    );
+
+    if (
+      vencimiento < hoy
+    ) {
+      return 'Vencida';
+    }
+
+    return 'Vigente';
+  }
+
+  // ==========================================
+  // CREAR
+  // ==========================================
 
   async create(
     createDeclaracionDto:
@@ -61,17 +177,32 @@ export class DeclaracionService {
       );
     }
 
+    const fechaDeclaracion =
+      this.crearFechaLocal(
+        createDeclaracionDto
+          .fecha_declaracion,
+      );
+
+    const fechaVencimiento =
+      this.calcularFechaVencimiento(
+        fechaDeclaracion,
+      );
+
+    const estadoCalculado =
+      this.calcularEstadoDeclaracion(
+        fechaVencimiento,
+      );
+
     const declaracion =
       this.declaracionRepository.create({
         fecha_declaracion:
-          new Date(
-            createDeclaracionDto
-              .fecha_declaracion,
-          ),
+          fechaDeclaracion,
+
+        fecha_vencimiento:
+          fechaVencimiento,
 
         estado_declaracion:
-          createDeclaracionDto
-            .estado_declaracion,
+          estadoCalculado,
 
         id_parque:
           createDeclaracionDto
@@ -85,27 +216,54 @@ export class DeclaracionService {
     );
   }
 
-  // ============================
-  // LISTAR DECLARACIONES
-  // ============================
+  // ==========================================
+  // LISTAR
+  // ==========================================
 
   async findAll():
     Promise<Declaracion[]> {
-    return await this.declaracionRepository.find({
-      relations: {
-        parque: true,
-      },
+    const declaraciones =
+      await this.declaracionRepository.find({
+        relations: {
+          parque: true,
+        },
 
-      order: {
-        fecha_declaracion:
-          'DESC',
-      },
-    });
+        order: {
+          fecha_declaracion:
+            'DESC',
+        },
+      });
+
+    for (
+      const declaracion
+      of declaraciones
+    ) {
+      const nuevoEstado =
+        this.calcularEstadoDeclaracion(
+          declaracion
+            .fecha_vencimiento,
+        );
+
+      if (
+        declaracion
+          .estado_declaracion !==
+        nuevoEstado
+      ) {
+        declaracion.estado_declaracion =
+          nuevoEstado;
+
+        await this.declaracionRepository.save(
+          declaracion,
+        );
+      }
+    }
+
+    return declaraciones;
   }
 
-  // ============================
-  // BUSCAR UNA DECLARACIÓN
-  // ============================
+  // ==========================================
+  // BUSCAR
+  // ==========================================
 
   async findOne(
     id: number,
@@ -128,12 +286,31 @@ export class DeclaracionService {
       );
     }
 
+    const nuevoEstado =
+      this.calcularEstadoDeclaracion(
+        declaracion
+          .fecha_vencimiento,
+      );
+
+    if (
+      declaracion
+        .estado_declaracion !==
+      nuevoEstado
+    ) {
+      declaracion.estado_declaracion =
+        nuevoEstado;
+
+      await this.declaracionRepository.save(
+        declaracion,
+      );
+    }
+
     return declaracion;
   }
 
-  // ============================
-  // ACTUALIZAR DECLARACIÓN
-  // ============================
+  // ==========================================
+  // ACTUALIZAR
+  // ==========================================
 
   async update(
     id: number,
@@ -149,20 +326,16 @@ export class DeclaracionService {
       undefined
     ) {
       declaracion.fecha_declaracion =
-        new Date(
+        this.crearFechaLocal(
           updateDeclaracionDto
             .fecha_declaracion,
         );
-    }
 
-    if (
-      updateDeclaracionDto
-        .estado_declaracion !==
-      undefined
-    ) {
-      declaracion.estado_declaracion =
-        updateDeclaracionDto
-          .estado_declaracion;
+      declaracion.fecha_vencimiento =
+        this.calcularFechaVencimiento(
+          declaracion
+            .fecha_declaracion,
+        );
     }
 
     if (
@@ -193,14 +366,20 @@ export class DeclaracionService {
         parque;
     }
 
+    declaracion.estado_declaracion =
+      this.calcularEstadoDeclaracion(
+        declaracion
+          .fecha_vencimiento,
+      );
+
     return await this.declaracionRepository.save(
       declaracion,
     );
   }
 
-  // ============================
-  // ELIMINAR DECLARACIÓN
-  // ============================
+  // ==========================================
+  // ELIMINAR
+  // ==========================================
 
   async remove(
     id: number,

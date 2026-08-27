@@ -3,24 +3,63 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import {
+  InjectRepository,
+} from '@nestjs/typeorm';
 
-import { Convenio } from './entities/convenio.entity';
-import { Parque } from '../parque/entities/parque.entity';
+import {
+  Repository,
+} from 'typeorm';
 
-import { CreateConvenioDto } from './dto/create-convenio.dto';
-import { UpdateConvenioDto } from './dto/update-convenio.dto';
+import {
+  Convenio,
+} from './entities/convenio.entity';
+
+import {
+  Parque,
+} from '../parque/entities/parque.entity';
+
+import {
+  CreateConvenioDto,
+} from './dto/create-convenio.dto';
+
+import {
+  UpdateConvenioDto,
+} from './dto/update-convenio.dto';
 
 @Injectable()
 export class ConvenioService {
   constructor(
     @InjectRepository(Convenio)
-    private readonly convenioRepository: Repository<Convenio>,
+    private readonly convenioRepository:
+      Repository<Convenio>,
 
     @InjectRepository(Parque)
-    private readonly parqueRepository: Repository<Parque>,
+    private readonly parqueRepository:
+      Repository<Parque>,
   ) {}
+
+  // ==========================================
+  // CREAR FECHA LOCAL SIN PROBLEMAS DE UTC
+  // ==========================================
+
+  private crearFechaLocal(
+    fecha: string,
+  ): Date {
+    const [
+      anio,
+      mes,
+      dia,
+    ] = fecha
+      .split('-')
+      .map(Number);
+
+    return new Date(
+      anio,
+      mes - 1,
+      dia,
+    );
+  }
 
   // ==========================================
   // CALCULAR ESTADO AUTOMÁTICO
@@ -30,27 +69,54 @@ export class ConvenioService {
     fechaRenovacion: string | Date,
     estadoActual?: string,
   ): string {
-    const renovacion = new Date(fechaRenovacion);
-    const hoy = new Date();
+    const renovacion =
+      typeof fechaRenovacion === 'string'
+        ? this.crearFechaLocal(
+            fechaRenovacion,
+          )
+        : new Date(
+            fechaRenovacion.getFullYear(),
+            fechaRenovacion.getMonth(),
+            fechaRenovacion.getDate(),
+          );
 
-    hoy.setHours(0, 0, 0, 0);
-    renovacion.setHours(0, 0, 0, 0);
+    const hoy =
+      new Date();
 
-    // Estos estados son manuales y se respetan
-    if (estadoActual === 'Finalizado') {
+    hoy.setHours(
+      0,
+      0,
+      0,
+      0,
+    );
+
+    renovacion.setHours(
+      0,
+      0,
+      0,
+      0,
+    );
+
+    if (
+      estadoActual ===
+      'Finalizado'
+    ) {
       return 'Finalizado';
     }
 
-    if (estadoActual === 'Vencido') {
+    if (
+      estadoActual ===
+      'Vencido'
+    ) {
       return 'Vencido';
     }
 
-    // Si la fecha ya pasó
-    if (renovacion < hoy) {
+    if (
+      renovacion < hoy
+    ) {
       return 'En renovación';
     }
 
-    // Si la fecha todavía no ha pasado
     return 'Vigente';
   }
 
@@ -59,13 +125,16 @@ export class ConvenioService {
   // ==========================================
 
   async create(
-    createConvenioDto: CreateConvenioDto,
+    createConvenioDto:
+      CreateConvenioDto,
   ): Promise<Convenio> {
-    const parque = await this.parqueRepository.findOne({
-      where: {
-        id_parque: createConvenioDto.id_parque,
-      },
-    });
+    const parque =
+      await this.parqueRepository.findOne({
+        where: {
+          id_parque:
+            createConvenioDto.id_parque,
+        },
+      });
 
     if (!parque) {
       throw new NotFoundException(
@@ -73,26 +142,47 @@ export class ConvenioService {
       );
     }
 
-    const estadoCalculado = this.calcularEstadoConvenio(
-      createConvenioDto.fecha_renovacion_firmas,
-      createConvenioDto.estado_convenio,
-    );
+    const fechaFirma =
+      this.crearFechaLocal(
+        createConvenioDto
+          .fecha_firma,
+      );
 
-    const convenio = this.convenioRepository.create({
-      fecha_firma: new Date(
-        createConvenioDto.fecha_firma,
-      ),
+    const fechaRenovacion =
+      this.crearFechaLocal(
+        createConvenioDto
+          .fecha_renovacion_firmas,
+      );
 
-      plazo: createConvenioDto.plazo,
+    const estadoCalculado =
+      this.calcularEstadoConvenio(
+        fechaRenovacion,
+        createConvenioDto
+          .estado_convenio,
+      );
 
-      fecha_renovacion_firmas: new Date(
-        createConvenioDto.fecha_renovacion_firmas,
-      ),
+    const convenio =
+      this.convenioRepository.create({
+        numero_convenio:
+          createConvenioDto
+            .numero_convenio
+            .trim(),
 
-      estado_convenio: estadoCalculado,
+        fecha_firma:
+          fechaFirma,
 
-      parque,
-    });
+        plazo:
+          createConvenioDto
+            .plazo,
+
+        fecha_renovacion_firmas:
+          fechaRenovacion,
+
+        estado_convenio:
+          estadoCalculado,
+
+        parque,
+      });
 
     return await this.convenioRepository.save(
       convenio,
@@ -103,27 +193,40 @@ export class ConvenioService {
   // OBTENER TODOS LOS CONVENIOS
   // ==========================================
 
-  async findAll(): Promise<Convenio[]> {
-    const convenios = await this.convenioRepository.find({
-      relations: {
-        parque: true,
-      },
+  async findAll():
+    Promise<Convenio[]> {
+    const convenios =
+      await this.convenioRepository.find({
+        relations: {
+          parque: true,
+        },
 
-      order: {
-        id_convenio: 'ASC',
-      },
-    });
+        order: {
+          id_convenio:
+            'ASC',
+        },
+      });
 
-    for (const convenio of convenios) {
-      const nuevoEstado = this.calcularEstadoConvenio(
-        convenio.fecha_renovacion_firmas,
-        convenio.estado_convenio,
-      );
+    for (
+      const convenio
+      of convenios
+    ) {
+      const nuevoEstado =
+        this.calcularEstadoConvenio(
+          convenio
+            .fecha_renovacion_firmas,
+
+          convenio
+            .estado_convenio,
+        );
 
       if (
-        convenio.estado_convenio !== nuevoEstado
+        convenio
+          .estado_convenio !==
+        nuevoEstado
       ) {
-        convenio.estado_convenio = nuevoEstado;
+        convenio.estado_convenio =
+          nuevoEstado;
 
         await this.convenioRepository.save(
           convenio,
@@ -141,15 +244,17 @@ export class ConvenioService {
   async findOne(
     id: number,
   ): Promise<Convenio> {
-    const convenio = await this.convenioRepository.findOne({
-      where: {
-        id_convenio: id,
-      },
+    const convenio =
+      await this.convenioRepository.findOne({
+        where: {
+          id_convenio:
+            id,
+        },
 
-      relations: {
-        parque: true,
-      },
-    });
+        relations: {
+          parque: true,
+        },
+      });
 
     if (!convenio) {
       throw new NotFoundException(
@@ -157,15 +262,22 @@ export class ConvenioService {
       );
     }
 
-    const nuevoEstado = this.calcularEstadoConvenio(
-      convenio.fecha_renovacion_firmas,
-      convenio.estado_convenio,
-    );
+    const nuevoEstado =
+      this.calcularEstadoConvenio(
+        convenio
+          .fecha_renovacion_firmas,
+
+        convenio
+          .estado_convenio,
+      );
 
     if (
-      convenio.estado_convenio !== nuevoEstado
+      convenio
+        .estado_convenio !==
+      nuevoEstado
     ) {
-      convenio.estado_convenio = nuevoEstado;
+      convenio.estado_convenio =
+        nuevoEstado;
 
       await this.convenioRepository.save(
         convenio,
@@ -181,59 +293,78 @@ export class ConvenioService {
 
   async update(
     id: number,
-    updateConvenioDto: UpdateConvenioDto,
+    updateConvenioDto:
+      UpdateConvenioDto,
   ): Promise<Convenio> {
-    const convenio = await this.findOne(id);
+    const convenio =
+      await this.findOne(id);
 
-    // FECHA DE FIRMA
     if (
-      updateConvenioDto.fecha_firma !==
+      updateConvenioDto
+        .numero_convenio !==
       undefined
     ) {
-      convenio.fecha_firma = new Date(
-        updateConvenioDto.fecha_firma,
-      );
+      convenio.numero_convenio =
+        updateConvenioDto
+          .numero_convenio
+          .trim();
     }
 
-    // PLAZO
     if (
-      updateConvenioDto.plazo !==
+      updateConvenioDto
+        .fecha_firma !==
       undefined
     ) {
-      convenio.plazo =
-        updateConvenioDto.plazo;
-    }
-
-    // FECHA DE RENOVACIÓN
-    if (
-      updateConvenioDto.fecha_renovacion_firmas !==
-      undefined
-    ) {
-      convenio.fecha_renovacion_firmas =
-        new Date(
-          updateConvenioDto.fecha_renovacion_firmas,
+      convenio.fecha_firma =
+        this.crearFechaLocal(
+          updateConvenioDto
+            .fecha_firma,
         );
     }
 
-    // ESTADO
     if (
-      updateConvenioDto.estado_convenio !==
+      updateConvenioDto
+        .plazo !==
+      undefined
+    ) {
+      convenio.plazo =
+        updateConvenioDto
+          .plazo;
+    }
+
+    if (
+      updateConvenioDto
+        .fecha_renovacion_firmas !==
+      undefined
+    ) {
+      convenio.fecha_renovacion_firmas =
+        this.crearFechaLocal(
+          updateConvenioDto
+            .fecha_renovacion_firmas,
+        );
+    }
+
+    if (
+      updateConvenioDto
+        .estado_convenio !==
       undefined
     ) {
       convenio.estado_convenio =
-        updateConvenioDto.estado_convenio;
+        updateConvenioDto
+          .estado_convenio;
     }
 
-    // CAMBIAR PARQUE
     if (
-      updateConvenioDto.id_parque !==
+      updateConvenioDto
+        .id_parque !==
       undefined
     ) {
       const parque =
         await this.parqueRepository.findOne({
           where: {
             id_parque:
-              updateConvenioDto.id_parque,
+              updateConvenioDto
+                .id_parque,
           },
         });
 
@@ -243,17 +374,17 @@ export class ConvenioService {
         );
       }
 
-      convenio.parque = parque;
+      convenio.parque =
+        parque;
     }
-
-    // ==========================================
-    // RECALCULAR ESTADO
-    // ==========================================
 
     convenio.estado_convenio =
       this.calcularEstadoConvenio(
-        convenio.fecha_renovacion_firmas,
-        convenio.estado_convenio,
+        convenio
+          .fecha_renovacion_firmas,
+
+        convenio
+          .estado_convenio,
       );
 
     return await this.convenioRepository.save(
