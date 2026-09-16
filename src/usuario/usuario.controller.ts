@@ -35,6 +35,14 @@ import {
 } from './dto/restablecer-password.dto';
 
 import {
+  SolicitarCambioCorreoDto,
+} from './dto/solicitar-cambio-correo.dto';
+
+import {
+  VerificarCambioCorreoDto,
+} from './dto/verificar-cambio-correo.dto';
+
+import {
   JwtAuthGuard,
 } from '../auth/guards/jwt-auth.guard';
 
@@ -107,6 +115,73 @@ export class UsuarioController {
   ) {
     return this.usuarioService.invitar(
       invitarUsuarioDto,
+    );
+  }
+
+  // ============================================
+  // SOLICITAR CAMBIO DE CORREO
+  // PROTEGIDO
+  // ============================================
+
+  @Post(':id/solicitar-cambio-correo')
+  @UseGuards(JwtAuthGuard)
+  solicitarCambioCorreo(
+    @Param(
+      'id',
+      ParseIntPipe,
+    )
+    id: number,
+
+    @Body()
+    dto:
+      SolicitarCambioCorreoDto,
+  ) {
+    return this.usuarioService.solicitarCambioCorreo(
+      id,
+      dto,
+    );
+  }
+
+  // ============================================
+  // VERIFICAR CAMBIO DE CORREO
+  // PROTEGIDO
+  // ============================================
+
+  @Post(':id/verificar-cambio-correo')
+  @UseGuards(JwtAuthGuard)
+  verificarCambioCorreo(
+    @Param(
+      'id',
+      ParseIntPipe,
+    )
+    id: number,
+
+    @Body()
+    dto:
+      VerificarCambioCorreoDto,
+  ) {
+    return this.usuarioService.verificarCambioCorreo(
+      id,
+      dto,
+    );
+  }
+
+  // ============================================
+  // REENVIAR CÓDIGO
+  // PROTEGIDO
+  // ============================================
+
+  @Post(':id/reenviar-codigo-correo')
+  @UseGuards(JwtAuthGuard)
+  reenviarCodigoCambioCorreo(
+    @Param(
+      'id',
+      ParseIntPipe,
+    )
+    id: number,
+  ) {
+    return this.usuarioService.reenviarCodigoCambioCorreo(
+      id,
     );
   }
 

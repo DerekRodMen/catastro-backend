@@ -1,19 +1,21 @@
 import {
   IsDateString,
+  IsIn,
   IsInt,
   IsNotEmpty,
   IsNumber,
   IsPositive,
   IsString,
+  Matches,
+  Max,
   MaxLength,
 } from 'class-validator';
-
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateParqueDto {
   @ApiProperty({
-    example:
-      'Barrio Latino, Grecia Centro',
+    example: 'Barrio Latino, Grecia Centro',
+    maxLength: 200,
   })
   @IsString()
   @IsNotEmpty()
@@ -21,24 +23,42 @@ export class CreateParqueDto {
   ubicacion!: string;
 
   @ApiProperty({
-    example:
-      '2-123456-000',
+    example: '2123456000',
+    maxLength: 50,
+    description: 'Solo números.',
   })
   @IsString()
   @IsNotEmpty()
   @MaxLength(50)
+  @Matches(/^\d+$/, {
+    message: 'El número de finca solo puede contener números.',
+  })
   numero_finca!: string;
 
   @ApiProperty({
     example: 2500.5,
+    maximum: 9999999999.99,
+    description: 'Máximo 10 dígitos enteros y 2 decimales.',
   })
-  @IsNumber()
-  @IsPositive()
+  @IsNumber(
+    {
+      maxDecimalPlaces: 2,
+    },
+    {
+      message: 'El área debe ser un número válido con máximo 2 decimales.',
+    },
+  )
+  @IsPositive({
+    message: 'El área debe ser mayor que 0.',
+  })
+  @Max(9999999999.99, {
+    message: 'El área excede el máximo permitido.',
+  })
   area!: number;
 
   @ApiProperty({
-    example:
-      'A-1234567-2026',
+    example: 'A-1234567-2026',
+    maxLength: 50,
   })
   @IsString()
   @IsNotEmpty()
@@ -46,25 +66,30 @@ export class CreateParqueDto {
   numero_plano!: string;
 
   @ApiProperty({
-    example:
-      'Visado municipal aprobado',
+    example: 'Aprobado',
+    enum: ['Aprobado', 'Solicitado', 'No tiene'],
   })
   @IsString()
   @IsNotEmpty()
-  @MaxLength(50)
+  @IsIn(['Aprobado', 'Solicitado', 'No tiene'], {
+    message: 'El visado debe ser Aprobado, Solicitado o No tiene.',
+  })
   visado!: string;
 
   @ApiProperty({
-    example: 'Activo',
+    example: 'Bueno',
+    enum: ['Bueno', 'Regular', 'Malo', 'Vacío'],
   })
   @IsString()
   @IsNotEmpty()
-  @MaxLength(50)
+  @IsIn(['Bueno', 'Regular', 'Malo', 'Vacío'], {
+    message: 'El estado debe ser Bueno, Regular, Malo o Vacío.',
+  })
   estado!: string;
 
   @ApiProperty({
-    example:
-      'Sin inversión registrada',
+    example: 'Sin inversión registrada',
+    maxLength: 500,
   })
   @IsString()
   @IsNotEmpty()
@@ -73,13 +98,14 @@ export class CreateParqueDto {
 
   @ApiProperty({
     example: 0,
+    maximum: 9999999999.99,
   })
-  @IsNumber()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Max(9999999999.99)
   inversion!: number;
 
   @ApiProperty({
-    example:
-      '2026-01-01',
+    example: '2026-01-01',
   })
   @IsDateString()
   fecha_inversion!: string;

@@ -45,8 +45,20 @@ import {
 } from './declaracion/declaracion.module';
 
 import {
+  MantenimientoModule,
+} from './mantenimiento/mantenimiento.module';
+
+import {
   MailModule,
 } from './mail/mail.module';
+
+import {
+  ListadoParquesModule,
+} from './listado-parques/listado-parques.module';
+
+import {
+  AuditoriaModule,
+} from './auditoria/auditoria.module';
 
 
 // ============================================
@@ -76,6 +88,18 @@ import {
 import {
   Declaracion,
 } from './declaracion/entities/declaracion.entity';
+
+import {
+  Mantenimiento,
+} from './mantenimiento/entities/mantenimiento.entity';
+
+import {
+  MantenimientoImagen,
+} from './mantenimiento/entities/mantenimiento-imagen.entity';
+
+import {
+  Auditoria,
+} from './auditoria/entities/auditoria.entity';
 
 
 @Module({
@@ -143,6 +167,9 @@ import {
           Parque,
           Convenio,
           Declaracion,
+          Mantenimiento,
+          MantenimientoImagen,
+          Auditoria,
         ],
 
         synchronize: false,
@@ -207,10 +234,31 @@ import {
 
 
     // ============================================
+    // MANTENIMIENTOS
+    // ============================================
+
+    MantenimientoModule,
+
+
+    // ============================================
     // CORREO
     // ============================================
 
     MailModule,
+
+
+    // ============================================
+    // LISTADO DE PARQUES
+    // ============================================
+
+    ListadoParquesModule,
+
+
+    // ============================================
+    // AUDITORÍA
+    // ============================================
+
+    AuditoriaModule,
   ],
 })
 export class AppModule {}

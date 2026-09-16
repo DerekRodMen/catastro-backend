@@ -47,18 +47,51 @@ export class MailService {
     this.transporter =
       nodemailer.createTransport({
         host,
-
         port,
-
-        secure:
-          process.env.MAIL_SECURE ===
-          'true',
+        secure: false,
 
         auth: {
           user,
-          pass: password,
+          pass:
+            password,
         },
+
+        requireTLS:
+          true,
+
+        connectionTimeout:
+          15000,
+
+        greetingTimeout:
+          15000,
+
+        socketTimeout:
+          20000,
+
+        logger:
+          true,
+
+        debug:
+          true,
       });
+  }
+
+  // ============================================
+  // OBTENER REMITENTE
+  // ============================================
+
+  private obtenerRemitente():
+    string {
+    const remitente =
+      process.env.MAIL_FROM;
+
+    if (!remitente) {
+      throw new Error(
+        'MAIL_FROM no está configurado en el archivo .env',
+      );
+    }
+
+    return remitente;
   }
 
   // ============================================
@@ -80,13 +113,7 @@ export class MailService {
         )}`;
 
       const remitente =
-        process.env.MAIL_FROM;
-
-      if (!remitente) {
-        throw new Error(
-          'MAIL_FROM no está configurado en el archivo .env',
-        );
-      }
+        this.obtenerRemitente();
 
       await this.transporter.sendMail({
         from:
@@ -209,13 +236,7 @@ export class MailService {
         )}`;
 
       const remitente =
-        process.env.MAIL_FROM;
-
-      if (!remitente) {
-        throw new Error(
-          'MAIL_FROM no está configurado en el archivo .env',
-        );
-      }
+        this.obtenerRemitente();
 
       await this.transporter.sendMail({
         from:
@@ -311,6 +332,109 @@ export class MailService {
 
       throw new InternalServerErrorException(
         'No se pudo enviar el correo de recuperación de contraseña.',
+      );
+    }
+  }
+
+  // ============================================
+  // ENVIAR CÓDIGO PARA CAMBIO DE CORREO
+  // ============================================
+
+  async enviarCodigoCambioCorreo(
+    correo: string,
+    codigo: string,
+  ): Promise<void> {
+    try {
+      const remitente =
+        this.obtenerRemitente();
+
+      await this.transporter.sendMail({
+        from:
+          remitente,
+
+        to:
+          correo,
+
+        subject:
+          'Código de verificación - Cambio de correo',
+
+        html: `
+          <div
+            style="
+              font-family: Arial, Helvetica, sans-serif;
+              max-width: 600px;
+              margin: 0 auto;
+              padding: 30px;
+              color: #1e293b;
+            "
+          >
+
+            <h2>
+              Sistema de Catastro
+            </h2>
+
+            <p>
+              Se solicitó cambiar el correo
+              electrónico asociado a una cuenta
+              del sistema.
+            </p>
+
+            <p>
+              Utilice el siguiente código
+              para confirmar el nuevo correo:
+            </p>
+
+            <div
+              style="
+                margin: 28px 0;
+                padding: 20px;
+                background-color: #f1f5f9;
+                border-radius: 10px;
+                text-align: center;
+              "
+            >
+              <span
+                style="
+                  font-size: 32px;
+                  font-weight: bold;
+                  letter-spacing: 8px;
+                  color: #0f172a;
+                "
+              >
+                ${codigo}
+              </span>
+            </div>
+
+            <p>
+              El código es válido durante
+              <strong>10 minutos</strong>.
+            </p>
+
+            <p
+              style="
+                font-size: 14px;
+                color: #64748b;
+              "
+            >
+              Si usted no esperaba este cambio,
+              ignore este mensaje.
+            </p>
+
+          </div>
+        `,
+      });
+
+      console.log(
+        `Código de cambio de correo enviado correctamente a ${correo}`,
+      );
+    } catch (error) {
+      console.error(
+        'Error enviando código de cambio de correo:',
+        error,
+      );
+
+      throw new InternalServerErrorException(
+        'No se pudo enviar el código de verificación del correo.',
       );
     }
   }

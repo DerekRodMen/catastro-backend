@@ -6,7 +6,6 @@ import {
   OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-
 import { Distrito } from '../../distrito/entities/distrito.entity';
 import { Encargado } from '../../encargado/entities/encargado.entity';
 import { Convenio } from '../../convenio/entities/convenio.entity';
@@ -32,6 +31,7 @@ export class Parque {
     name: 'numero_finca',
     type: 'varchar',
     length: 50,
+    unique: true,
   })
   numero_finca!: string;
 
@@ -47,6 +47,7 @@ export class Parque {
     name: 'numero_plano',
     type: 'varchar',
     length: 50,
+    unique: true,
   })
   numero_plano!: string;
 

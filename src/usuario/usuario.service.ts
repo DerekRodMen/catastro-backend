@@ -42,6 +42,14 @@ import {
 } from './dto/restablecer-password.dto';
 
 import {
+  SolicitarCambioCorreoDto,
+} from './dto/solicitar-cambio-correo.dto';
+
+import {
+  VerificarCambioCorreoDto,
+} from './dto/verificar-cambio-correo.dto';
+
+import {
   UsuarioSeguro,
 } from './interfaces/usuario-seguro.interface';
 
@@ -83,7 +91,7 @@ export class UsuarioService {
   }
 
   // ============================================
-  // HASH DE TOKEN
+  // HASH SHA-256
   // ============================================
 
   private generarHashToken(
@@ -93,6 +101,37 @@ export class UsuarioService {
       .createHash('sha256')
       .update(token)
       .digest('hex');
+  }
+
+  // ============================================
+  // GENERAR CÓDIGO DE 6 DÍGITOS
+  // ============================================
+
+  private generarCodigoCorreo():
+    string {
+    return crypto
+      .randomInt(
+        100000,
+        1000000,
+      )
+      .toString();
+  }
+
+  // ============================================
+  // LIMPIAR CAMBIO DE CORREO PENDIENTE
+  // ============================================
+
+  private limpiarCambioCorreoPendiente(
+    usuario: Usuario,
+  ): void {
+    usuario.correo_pendiente =
+      null;
+
+    usuario.codigo_correo_hash =
+      null;
+
+    usuario.codigo_correo_expiracion =
+      null;
   }
 
   // ============================================
@@ -166,6 +205,15 @@ export class UsuarioService {
 
         token_expiracion:
           expiracion,
+
+        correo_pendiente:
+          null,
+
+        codigo_correo_hash:
+          null,
+
+        codigo_correo_expiracion:
+          null,
       });
 
     const usuarioGuardado =
@@ -232,6 +280,19 @@ export class UsuarioService {
       );
     }
 
+    const nombre =
+      activarUsuarioDto
+        .nombre_usuario
+        .trim();
+
+    if (
+      nombre.length > 50
+    ) {
+      throw new BadRequestException(
+        'El nombre no puede superar los 50 caracteres.',
+      );
+    }
+
     const passwordHash =
       await bcrypt.hash(
         activarUsuarioDto.password,
@@ -239,9 +300,7 @@ export class UsuarioService {
       );
 
     usuario.nombre_usuario =
-      activarUsuarioDto
-        .nombre_usuario
-        .trim();
+      nombre;
 
     usuario.password =
       passwordHash;
@@ -290,7 +349,6 @@ export class UsuarioService {
         },
       });
 
-    // No revelamos si el correo existe
     if (!usuario) {
       return {
         message:
@@ -298,8 +356,6 @@ export class UsuarioService {
       };
     }
 
-    // Si todavía no activó la cuenta,
-    // no hacemos recuperación normal.
     if (!usuario.password) {
       return {
         message:
@@ -320,8 +376,6 @@ export class UsuarioService {
     const expiracion =
       new Date();
 
-    // Token de recuperación válido
-    // por 1 hora
     expiracion.setHours(
       expiracion.getHours() + 1,
     );
@@ -342,8 +396,6 @@ export class UsuarioService {
         token,
       );
     } catch (error) {
-      // Limpiamos el token si falla
-      // el envío del correo.
       usuario.token_activacion =
         null;
 
@@ -487,6 +539,317 @@ export class UsuarioService {
   }
 
   // ============================================
+  // SOLICITAR CAMBIO DE CORREO
+  // ============================================
+
+  async solicitarCambioCorreo(
+    id: number,
+    dto:
+      SolicitarCambioCorreoDto,
+  ): Promise<{
+    message: string;
+    correo_pendiente: string;
+  }> {
+    const usuario =
+      await this.findOne(id);
+
+    const correoNuevo =
+      dto.correo_nuevo
+        .trim()
+        .toLowerCase();
+
+    if (
+      correoNuevo ===
+      usuario.correo
+        .trim()
+        .toLowerCase()
+    ) {
+      throw new BadRequestException(
+        'El nuevo correo debe ser diferente al correo actual.',
+      );
+    }
+
+    const existente =
+      await this.usuarioRepository.findOne({
+        where: {
+          correo:
+            correoNuevo,
+        },
+      });
+
+    if (
+      existente &&
+      existente.id_usuario !==
+        id
+    ) {
+      throw new ConflictException(
+        'Ya existe un usuario registrado con ese correo.',
+      );
+    }
+
+    // Si el usuario ya está activado,
+    // aplicamos nombre y estado en este momento.
+    // El correo se mantiene sin cambios
+    // hasta verificar el código.
+    if (
+      usuario.nombre_usuario !==
+      null &&
+      dto.nombre_usuario !==
+      undefined
+    ) {
+      const nombre =
+        dto.nombre_usuario
+          .trim();
+
+      if (
+        nombre.length > 50
+      ) {
+        throw new BadRequestException(
+          'El nombre no puede superar los 50 caracteres.',
+        );
+      }
+
+      usuario.nombre_usuario =
+        nombre;
+    }
+
+    if (
+      usuario.nombre_usuario !==
+      null &&
+      dto.estado !==
+      undefined
+    ) {
+      usuario.estado =
+        dto.estado;
+    }
+
+    const codigo =
+      this.generarCodigoCorreo();
+
+    const codigoHash =
+      this.generarHashToken(
+        codigo,
+      );
+
+    const expiracion =
+      new Date();
+
+    expiracion.setMinutes(
+      expiracion.getMinutes() +
+        10,
+    );
+
+    usuario.correo_pendiente =
+      correoNuevo;
+
+    usuario.codigo_correo_hash =
+      codigoHash;
+
+    usuario.codigo_correo_expiracion =
+      expiracion;
+
+    await this.usuarioRepository.save(
+      usuario,
+    );
+
+    try {
+      await this.mailService.enviarCodigoCambioCorreo(
+        correoNuevo,
+        codigo,
+      );
+    } catch (error) {
+      this.limpiarCambioCorreoPendiente(
+        usuario,
+      );
+
+      await this.usuarioRepository.save(
+        usuario,
+      );
+
+      throw error;
+    }
+
+    return {
+      message:
+        'Se envió un código de verificación al nuevo correo.',
+
+      correo_pendiente:
+        correoNuevo,
+    };
+  }
+
+  // ============================================
+  // VERIFICAR CAMBIO DE CORREO
+  // ============================================
+
+  async verificarCambioCorreo(
+    id: number,
+    dto:
+      VerificarCambioCorreoDto,
+  ): Promise<{
+    message: string;
+  }> {
+    const usuario =
+      await this.findOne(id);
+
+    if (
+      !usuario.correo_pendiente ||
+      !usuario.codigo_correo_hash ||
+      !usuario.codigo_correo_expiracion
+    ) {
+      throw new BadRequestException(
+        'No existe un cambio de correo pendiente para este usuario.',
+      );
+    }
+
+    if (
+      usuario.codigo_correo_expiracion.getTime() <=
+      Date.now()
+    ) {
+      this.limpiarCambioCorreoPendiente(
+        usuario,
+      );
+
+      await this.usuarioRepository.save(
+        usuario,
+      );
+
+      throw new BadRequestException(
+        'El código de verificación ha expirado. Solicite uno nuevo.',
+      );
+    }
+
+    const codigoHash =
+      this.generarHashToken(
+        dto.codigo,
+      );
+
+    const hashEsperado =
+      Buffer.from(
+        usuario.codigo_correo_hash,
+        'utf8',
+      );
+
+    const hashRecibido =
+      Buffer.from(
+        codigoHash,
+        'utf8',
+      );
+
+    const coincide =
+      hashEsperado.length ===
+        hashRecibido.length &&
+      crypto.timingSafeEqual(
+        hashEsperado,
+        hashRecibido,
+      );
+
+    if (!coincide) {
+      throw new BadRequestException(
+        'El código de verificación es incorrecto.',
+      );
+    }
+
+    // Verificamos nuevamente que nadie
+    // haya ocupado el correo mientras
+    // se esperaba el código.
+    const existente =
+      await this.usuarioRepository.findOne({
+        where: {
+          correo:
+            usuario.correo_pendiente,
+        },
+      });
+
+    if (
+      existente &&
+      existente.id_usuario !==
+        id
+    ) {
+      throw new ConflictException(
+        'El correo ya fue registrado por otro usuario.',
+      );
+    }
+
+    usuario.correo =
+      usuario.correo_pendiente;
+
+    this.limpiarCambioCorreoPendiente(
+      usuario,
+    );
+
+    await this.usuarioRepository.save(
+      usuario,
+    );
+
+    return {
+      message:
+        'Correo electrónico verificado y actualizado correctamente.',
+    };
+  }
+
+  // ============================================
+  // REENVIAR CÓDIGO DE CAMBIO DE CORREO
+  // ============================================
+
+  async reenviarCodigoCambioCorreo(
+    id: number,
+  ): Promise<{
+    message: string;
+  }> {
+    const usuario =
+      await this.findOne(id);
+
+    if (
+      !usuario.correo_pendiente
+    ) {
+      throw new BadRequestException(
+        'No existe un cambio de correo pendiente para este usuario.',
+      );
+    }
+
+    const codigo =
+      this.generarCodigoCorreo();
+
+    const codigoHash =
+      this.generarHashToken(
+        codigo,
+      );
+
+    const expiracion =
+      new Date();
+
+    expiracion.setMinutes(
+      expiracion.getMinutes() +
+        10,
+    );
+
+    usuario.codigo_correo_hash =
+      codigoHash;
+
+    usuario.codigo_correo_expiracion =
+      expiracion;
+
+    await this.usuarioRepository.save(
+      usuario,
+    );
+
+    try {
+      await this.mailService.enviarCodigoCambioCorreo(
+        usuario.correo_pendiente,
+        codigo,
+      );
+    } catch (error) {
+      throw error;
+    }
+
+    return {
+      message:
+        'Se envió un nuevo código de verificación.',
+    };
+  }
+
+  // ============================================
   // ACTUALIZAR USUARIO
   // ============================================
 
@@ -498,7 +861,12 @@ export class UsuarioService {
     const usuario =
       await this.findOne(id);
 
+    // ========================================
     // CORREO
+    // ========================================
+    // Un correo diferente NO puede cambiarse
+    // directamente con PATCH. Debe pasar
+    // por el código de verificación.
 
     if (
       updateUsuarioDto.correo !==
@@ -509,44 +877,55 @@ export class UsuarioService {
           .trim()
           .toLowerCase();
 
-      const existente =
-        await this.usuarioRepository.findOne({
-          where: {
-            correo,
-          },
-        });
-
       if (
-        existente &&
-        existente.id_usuario !==
-          id
+        correo !==
+        usuario.correo
+          .trim()
+          .toLowerCase()
       ) {
-        throw new ConflictException(
-          'Ya existe un usuario registrado con ese correo.',
+        throw new BadRequestException(
+          'Para cambiar el correo electrónico debe completar la verificación por código.',
         );
       }
-
-      usuario.correo =
-        correo;
     }
 
+    // ========================================
     // NOMBRE
+    // ========================================
 
     if (
       updateUsuarioDto
         .nombre_usuario !==
-      undefined
+      undefined &&
+      usuario.nombre_usuario !==
+        null
     ) {
-      usuario.nombre_usuario =
+      const nombre =
         updateUsuarioDto
-          .nombre_usuario;
+          .nombre_usuario
+          .trim();
+
+      if (
+        nombre.length > 50
+      ) {
+        throw new BadRequestException(
+          'El nombre no puede superar los 50 caracteres.',
+        );
+      }
+
+      usuario.nombre_usuario =
+        nombre;
     }
 
+    // ========================================
     // ESTADO
+    // ========================================
 
     if (
       updateUsuarioDto.estado !==
-      undefined
+        undefined &&
+      usuario.nombre_usuario !==
+        null
     ) {
       usuario.estado =
         updateUsuarioDto.estado;
