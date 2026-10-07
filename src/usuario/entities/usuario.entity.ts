@@ -11,7 +11,7 @@ export class Usuario {
 
   @Column({
     type: 'varchar',
-    length: 100,
+    length: 50,
     nullable: true,
   })
   nombre_usuario!: string | null;
@@ -48,4 +48,28 @@ export class Usuario {
     nullable: true,
   })
   token_expiracion!: Date | null;
+
+  // ============================================
+  // CAMBIO DE CORREO PENDIENTE
+  // ============================================
+
+  @Column({
+    type: 'varchar',
+    length: 150,
+    nullable: true,
+  })
+  correo_pendiente!: string | null;
+
+  @Column({
+    type: 'varchar',
+    length: 64,
+    nullable: true,
+  })
+  codigo_correo_hash!: string | null;
+
+  @Column({
+    type: 'datetime2',
+    nullable: true,
+  })
+  codigo_correo_expiracion!: Date | null;
 }

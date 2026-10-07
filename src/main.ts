@@ -1,4 +1,3 @@
-
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 
@@ -12,17 +11,44 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Configuración de CORS
+  // =====================================================
+  // CORS
+  // =====================================================
+
   app.enableCors({
     origin: [
       'http://localhost:5173',
       'http://localhost:5174',
     ],
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+
+    methods: [
+      'GET',
+      'HEAD',
+      'PUT',
+      'PATCH',
+      'POST',
+      'DELETE',
+      'OPTIONS',
+    ],
+
     credentials: true,
+
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+    ],
+
+    exposedHeaders: [
+      'Content-Disposition',
+      'Content-Type',
+      'Content-Length',
+    ],
   });
 
-  // Validaciones globales
+  // =====================================================
+  // VALIDACIONES GLOBALES
+  // =====================================================
+
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -30,7 +56,10 @@ async function bootstrap() {
     }),
   );
 
-  // Configuración de Swagger
+  // =====================================================
+  // SWAGGER
+  // =====================================================
+
   const config = new DocumentBuilder()
     .setTitle('Sistema de Catastro')
     .setDescription(
@@ -50,16 +79,21 @@ async function bootstrap() {
     )
     .build();
 
-  const document = SwaggerModule.createDocument(
-    app,
-    config,
-  );
+  const document =
+    SwaggerModule.createDocument(
+      app,
+      config,
+    );
 
   SwaggerModule.setup(
     'api',
     app,
     document,
   );
+
+  // =====================================================
+  // INICIAR SERVIDOR
+  // =====================================================
 
   await app.listen(
     process.env.PORT ?? 3000,

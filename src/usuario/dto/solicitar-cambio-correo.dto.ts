@@ -6,7 +6,7 @@ import {
   MaxLength,
 } from 'class-validator';
 
-export class UpdateUsuarioDto {
+export class SolicitarCambioCorreoDto {
   @IsOptional()
   @IsString()
   @MaxLength(50, {
@@ -15,7 +15,6 @@ export class UpdateUsuarioDto {
   })
   nombre_usuario?: string;
 
-  @IsOptional()
   @IsEmail(
     {},
     {
@@ -27,7 +26,7 @@ export class UpdateUsuarioDto {
     message:
       'El correo no puede superar los 150 caracteres.',
   })
-  correo?: string;
+  correo_nuevo!: string;
 
   @IsOptional()
   @IsBoolean({

@@ -24,13 +24,84 @@ import {
   UpdateDistritoDto,
 } from './dto/update-distrito.dto';
 
+import {
+  AuditoriaService,
+} from '../auditoria/auditoria.service';
+
+import type {
+  UsuarioAuditoria,
+} from '../auditoria/interfaces/usuario-auditoria.interface';
+
 @Injectable()
 export class DistritoService {
   constructor(
     @InjectRepository(Distrito)
     private readonly distritoRepository:
       Repository<Distrito>,
+
+    private readonly auditoriaService:
+      AuditoriaService,
   ) {}
+
+  private obtenerDatosAuditoria(
+    distrito: Distrito,
+  ): Record<string, unknown> {
+    return {
+      id_distrito:
+        distrito.id_distrito,
+
+      nombre_distrito:
+        distrito.nombre_distrito,
+
+      numero_distrito:
+        distrito.numero_distrito,
+    };
+  }
+
+  private async registrarAuditoria(
+    usuario: UsuarioAuditoria,
+    accion: string,
+    idRegistro: number,
+    descripcion: string,
+    datosAnteriores?:
+      Record<string, unknown> | null,
+    datosNuevos?:
+      Record<string, unknown> | null,
+  ): Promise<void> {
+    try {
+      await this.auditoriaService.registrar({
+        id_usuario:
+          usuario.id_usuario,
+
+        nombre_usuario:
+          usuario.nombre_usuario,
+
+        correo_usuario:
+          usuario.correo,
+
+        modulo:
+          'DISTRITOS',
+
+        accion,
+
+        id_registro:
+          idRegistro,
+
+        descripcion,
+
+        datos_anteriores:
+          datosAnteriores ?? null,
+
+        datos_nuevos:
+          datosNuevos ?? null,
+      });
+    } catch (error) {
+      console.error(
+        'Error registrando auditoría de distritos:',
+        error,
+      );
+    }
+  }
 
   // ============================
   // CREAR DISTRITO
@@ -39,15 +110,30 @@ export class DistritoService {
   async create(
     createDistritoDto:
       CreateDistritoDto,
+    usuario: UsuarioAuditoria,
   ): Promise<Distrito> {
     const distrito =
       this.distritoRepository.create(
         createDistritoDto,
       );
 
-    return await this.distritoRepository.save(
-      distrito,
+    const guardado =
+      await this.distritoRepository.save(
+        distrito,
+      );
+
+    await this.registrarAuditoria(
+      usuario,
+      'CREAR',
+      guardado.id_distrito,
+      `Se creó el distrito "${guardado.nombre_distrito}".`,
+      null,
+      this.obtenerDatosAuditoria(
+        guardado,
+      ),
     );
+
+    return guardado;
   }
 
   // ============================
@@ -104,18 +190,38 @@ export class DistritoService {
     id: number,
     updateDistritoDto:
       UpdateDistritoDto,
+    usuario: UsuarioAuditoria,
   ): Promise<Distrito> {
     const distrito =
       await this.findOne(id);
+
+    const datosAnteriores =
+      this.obtenerDatosAuditoria(
+        distrito,
+      );
 
     Object.assign(
       distrito,
       updateDistritoDto,
     );
 
-    return await this.distritoRepository.save(
-      distrito,
+    const guardado =
+      await this.distritoRepository.save(
+        distrito,
+      );
+
+    await this.registrarAuditoria(
+      usuario,
+      'EDITAR',
+      guardado.id_distrito,
+      `Se modificó el distrito "${guardado.nombre_distrito}".`,
+      datosAnteriores,
+      this.obtenerDatosAuditoria(
+        guardado,
+      ),
     );
+
+    return guardado;
   }
 
   // ============================
@@ -124,15 +230,12 @@ export class DistritoService {
 
   async remove(
     id: number,
+    usuario: UsuarioAuditoria,
   ): Promise<{
     message: string;
   }> {
     const distrito =
       await this.findOne(id);
-
-    // Como findOne carga la relación
-    // "parques", podemos comprobarla
-    // antes de intentar eliminar.
 
     const cantidadParques =
       distrito.parques?.length ??
@@ -147,8 +250,28 @@ export class DistritoService {
       );
     }
 
+    const datosAnteriores =
+      this.obtenerDatosAuditoria(
+        distrito,
+      );
+
+    const idDistrito =
+      distrito.id_distrito;
+
+    const nombreDistrito =
+      distrito.nombre_distrito;
+
     await this.distritoRepository.remove(
       distrito,
+    );
+
+    await this.registrarAuditoria(
+      usuario,
+      'ELIMINAR',
+      idDistrito,
+      `Se eliminó el distrito "${nombreDistrito}".`,
+      datosAnteriores,
+      null,
     );
 
     return {

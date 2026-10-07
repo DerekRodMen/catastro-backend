@@ -7,8 +7,13 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Req,
   UseGuards,
 } from '@nestjs/common';
+
+import type {
+  Request,
+} from 'express';
 
 import {
   UsuarioService,
@@ -35,8 +40,20 @@ import {
 } from './dto/restablecer-password.dto';
 
 import {
+  SolicitarCambioCorreoDto,
+} from './dto/solicitar-cambio-correo.dto';
+
+import {
+  VerificarCambioCorreoDto,
+} from './dto/verificar-cambio-correo.dto';
+
+import {
   JwtAuthGuard,
 } from '../auth/guards/jwt-auth.guard';
+
+import type {
+  UsuarioAuditoria,
+} from '../auditoria/interfaces/usuario-auditoria.interface';
 
 @Controller('usuarios')
 export class UsuarioController {
@@ -44,11 +61,6 @@ export class UsuarioController {
     private readonly usuarioService:
       UsuarioService,
   ) {}
-
-  // ============================================
-  // ACTIVAR CUENTA
-  // PÚBLICO
-  // ============================================
 
   @Post('activar')
   activarCuenta(
@@ -61,11 +73,6 @@ export class UsuarioController {
     );
   }
 
-  // ============================================
-  // SOLICITAR RECUPERACIÓN
-  // PÚBLICO
-  // ============================================
-
   @Post('solicitar-recuperacion')
   solicitarRecuperacion(
     @Body()
@@ -76,11 +83,6 @@ export class UsuarioController {
       dto,
     );
   }
-
-  // ============================================
-  // RESTABLECER CONTRASEÑA
-  // PÚBLICO
-  // ============================================
 
   @Post('restablecer-password')
   restablecerPassword(
@@ -93,36 +95,96 @@ export class UsuarioController {
     );
   }
 
-  // ============================================
-  // INVITAR USUARIO
-  // PROTEGIDO
-  // ============================================
-
   @Post('invitar')
   @UseGuards(JwtAuthGuard)
   invitar(
     @Body()
     invitarUsuarioDto:
       InvitarUsuarioDto,
+
+    @Req()
+    request:
+      Request & {
+        user: UsuarioAuditoria;
+      },
   ) {
     return this.usuarioService.invitar(
       invitarUsuarioDto,
+      request.user,
     );
   }
 
-  // ============================================
-  // LISTAR
-  // ============================================
+  @Post(':id/solicitar-cambio-correo')
+  @UseGuards(JwtAuthGuard)
+  solicitarCambioCorreo(
+    @Param(
+      'id',
+      ParseIntPipe,
+    )
+    id: number,
+
+    @Body()
+    dto:
+      SolicitarCambioCorreoDto,
+
+    @Req()
+    request:
+      Request & {
+        user: UsuarioAuditoria;
+      },
+  ) {
+    return this.usuarioService.solicitarCambioCorreo(
+      id,
+      dto,
+      request.user,
+    );
+  }
+
+  @Post(':id/verificar-cambio-correo')
+  @UseGuards(JwtAuthGuard)
+  verificarCambioCorreo(
+    @Param(
+      'id',
+      ParseIntPipe,
+    )
+    id: number,
+
+    @Body()
+    dto:
+      VerificarCambioCorreoDto,
+
+    @Req()
+    request:
+      Request & {
+        user: UsuarioAuditoria;
+      },
+  ) {
+    return this.usuarioService.verificarCambioCorreo(
+      id,
+      dto,
+      request.user,
+    );
+  }
+
+  @Post(':id/reenviar-codigo-correo')
+  @UseGuards(JwtAuthGuard)
+  reenviarCodigoCambioCorreo(
+    @Param(
+      'id',
+      ParseIntPipe,
+    )
+    id: number,
+  ) {
+    return this.usuarioService.reenviarCodigoCambioCorreo(
+      id,
+    );
+  }
 
   @Get()
   @UseGuards(JwtAuthGuard)
   findAll() {
     return this.usuarioService.findAll();
   }
-
-  // ============================================
-  // BUSCAR
-  // ============================================
 
   @Get(':id')
   @UseGuards(JwtAuthGuard)
@@ -138,10 +200,6 @@ export class UsuarioController {
     );
   }
 
-  // ============================================
-  // EDITAR
-  // ============================================
-
   @Patch(':id')
   @UseGuards(JwtAuthGuard)
   update(
@@ -154,16 +212,19 @@ export class UsuarioController {
     @Body()
     updateUsuarioDto:
       UpdateUsuarioDto,
+
+    @Req()
+    request:
+      Request & {
+        user: UsuarioAuditoria;
+      },
   ) {
     return this.usuarioService.update(
       id,
       updateUsuarioDto,
+      request.user,
     );
   }
-
-  // ============================================
-  // ELIMINAR
-  // ============================================
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard)
@@ -173,9 +234,16 @@ export class UsuarioController {
       ParseIntPipe,
     )
     id: number,
+
+    @Req()
+    request:
+      Request & {
+        user: UsuarioAuditoria;
+      },
   ) {
     return this.usuarioService.remove(
       id,
+      request.user,
     );
   }
 }

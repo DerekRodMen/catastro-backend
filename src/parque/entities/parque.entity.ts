@@ -7,19 +7,33 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 
-import { Distrito } from '../../distrito/entities/distrito.entity';
-import { Encargado } from '../../encargado/entities/encargado.entity';
-import { Convenio } from '../../convenio/entities/convenio.entity';
-import { Declaracion } from '../../declaracion/entities/declaracion.entity';
+import {
+  Distrito,
+} from '../../distrito/entities/distrito.entity';
+
+import {
+  Encargado,
+} from '../../encargado/entities/encargado.entity';
+
+import {
+  Convenio,
+} from '../../convenio/entities/convenio.entity';
+
+import {
+  Declaracion,
+} from '../../declaracion/entities/declaracion.entity';
+
 
 @Entity({
   name: 'PARQUE',
 })
 export class Parque {
+
   @PrimaryGeneratedColumn({
     name: 'id_parque',
   })
   id_parque!: number;
+
 
   @Column({
     name: 'ubicacion',
@@ -28,12 +42,39 @@ export class Parque {
   })
   ubicacion!: string;
 
+
+  // ============================================
+  // UBICACIÓN GEOGRÁFICA
+  // ============================================
+
+  @Column({
+    name: 'latitud',
+    type: 'decimal',
+    precision: 10,
+    scale: 7,
+    nullable: true,
+  })
+  latitud!: number | null;
+
+
+  @Column({
+    name: 'longitud',
+    type: 'decimal',
+    precision: 10,
+    scale: 7,
+    nullable: true,
+  })
+  longitud!: number | null;
+
+
   @Column({
     name: 'numero_finca',
     type: 'varchar',
     length: 50,
+    unique: true,
   })
   numero_finca!: string;
+
 
   @Column({
     name: 'area',
@@ -43,12 +84,15 @@ export class Parque {
   })
   area!: number;
 
+
   @Column({
     name: 'numero_plano',
     type: 'varchar',
     length: 50,
+    unique: true,
   })
   numero_plano!: string;
+
 
   @Column({
     name: 'visado',
@@ -57,6 +101,7 @@ export class Parque {
   })
   visado!: string;
 
+
   @Column({
     name: 'estado',
     type: 'varchar',
@@ -64,12 +109,14 @@ export class Parque {
   })
   estado!: string;
 
+
   @Column({
     name: 'descripcion_inversion',
     type: 'varchar',
     length: 500,
   })
   descripcion_inversion!: string;
+
 
   @Column({
     name: 'inversion',
@@ -79,11 +126,13 @@ export class Parque {
   })
   inversion!: number;
 
+
   @Column({
     name: 'fecha_inversion',
     type: 'date',
   })
   fecha_inversion!: string;
+
 
   @Column({
     name: 'id_distrito',
@@ -91,55 +140,64 @@ export class Parque {
   })
   id_distrito!: number;
 
+
   @Column({
     name: 'id_encargado',
     type: 'int',
   })
   id_encargado!: number;
 
-  // ============================
+
+  // ============================================
   // RELACIÓN CON DISTRITO
-  // ============================
+  // ============================================
 
   @ManyToOne(
     () => Distrito,
-    (distrito) => distrito.parques,
+    (distrito) =>
+      distrito.parques,
   )
   @JoinColumn({
     name: 'id_distrito',
   })
   distrito!: Distrito;
 
-  // ============================
+
+  // ============================================
   // RELACIÓN CON ENCARGADO
-  // ============================
+  // ============================================
 
   @ManyToOne(
     () => Encargado,
-    (encargado) => encargado.parques,
+    (encargado) =>
+      encargado.parques,
   )
   @JoinColumn({
     name: 'id_encargado',
   })
   encargado!: Encargado;
 
-  // ============================
+
+  // ============================================
   // RELACIÓN CON CONVENIOS
-  // ============================
+  // ============================================
 
   @OneToMany(
     () => Convenio,
-    (convenio) => convenio.parque,
+    (convenio) =>
+      convenio.parque,
   )
   convenios!: Convenio[];
 
-  // ============================
+
+  // ============================================
   // RELACIÓN CON DECLARACIONES
-  // ============================
+  // ============================================
 
   @OneToMany(
     () => Declaracion,
-    (declaracion) => declaracion.parque,
+    (declaracion) =>
+      declaracion.parque,
   )
   declaraciones!: Declaracion[];
 }

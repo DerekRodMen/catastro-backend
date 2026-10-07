@@ -17,42 +17,26 @@ export class Encargado {
   id_encargado!: number;
 
   @Column({
-    name: 'tipo_encargado',
-    type: 'varchar',
-    length: 20,
-  })
-  tipo_encargado!: string;
-
-  @Column({
-    name: 'nombre_asociacion',
+    name: 'entidad_encargada',
     type: 'varchar',
     length: 150,
-    nullable: true,
   })
-  nombre_asociacion!: string | null;
+  entidad_encargada!: string;
 
   @Column({
     name: 'cedula_juridica',
     type: 'varchar',
-    length: 20,
+    length: 50,
     nullable: true,
   })
   cedula_juridica!: string | null;
 
   @Column({
-    name: 'nombre_encargado',
+    name: 'representante_legal',
     type: 'varchar',
     length: 150,
   })
-  nombre_encargado!: string;
-
-  @Column({
-    name: 'cedula_fisica',
-    type: 'varchar',
-    length: 20,
-    nullable: true,
-  })
-  cedula_fisica!: string | null;
+  representante_legal!: string;
 
   @Column({
     name: 'correo_encargado',
@@ -64,7 +48,7 @@ export class Encargado {
   @Column({
     name: 'telefono_encargado',
     type: 'varchar',
-    length: 20,
+    length: 50,
   })
   telefono_encargado!: string;
 

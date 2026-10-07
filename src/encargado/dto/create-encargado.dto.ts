@@ -1,10 +1,9 @@
 import {
   IsEmail,
-  IsIn,
   IsNotEmpty,
+  IsOptional,
   IsString,
   MaxLength,
-  ValidateIf,
 } from 'class-validator';
 
 import {
@@ -14,75 +13,43 @@ import {
 
 export class CreateEncargadoDto {
   @ApiProperty({
-    example: 'ASOCIACION',
-    enum: [
-      'ASOCIACION',
-      'PERSONA',
-    ],
+    example: 'Asociación de Desarrollo Integral de Grecia',
   })
   @IsString()
-  @IsNotEmpty()
-  @IsIn([
-    'ASOCIACION',
-    'PERSONA',
-  ])
-  tipo_encargado!: string;
-
-  @ApiPropertyOptional({
-    example:
-      'Asociación de Desarrollo Integral de Grecia',
+  @IsNotEmpty({
+    message: 'La entidad encargada es obligatoria.',
   })
-  @ValidateIf(
-    (obj) =>
-      obj.tipo_encargado ===
-      'ASOCIACION',
-  )
-  @IsString()
-  @IsNotEmpty()
   @MaxLength(150)
-  nombre_asociacion?: string;
+  entidad_encargada!: string;
 
   @ApiPropertyOptional({
     example: '3-002-123456',
   })
-  @ValidateIf(
-    (obj) =>
-      obj.tipo_encargado ===
-      'ASOCIACION',
-  )
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  @MaxLength(20)
+  @MaxLength(50)
   cedula_juridica?: string;
 
   @ApiProperty({
-    example:
-      'Juan Pérez Rodríguez',
+    example: 'Juan Pérez Rodríguez',
   })
   @IsString()
-  @IsNotEmpty()
+  @IsNotEmpty({
+    message: 'El representante legal es obligatorio.',
+  })
   @MaxLength(150)
-  nombre_encargado!: string;
-
-  @ApiPropertyOptional({
-    example: '1-1234-5678',
-  })
-  @ValidateIf(
-    (obj) =>
-      obj.tipo_encargado ===
-      'PERSONA',
-  )
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(20)
-  cedula_fisica?: string;
+  representante_legal!: string;
 
   @ApiProperty({
-    example:
-      'juan.perez@correo.com',
+    example: 'encargado@correo.com',
   })
-  @IsEmail()
-  @IsNotEmpty()
+  @IsEmail(
+    {},
+    {
+      message:
+        'Debe ingresar un correo electrónico válido.',
+    },
+  )
   @MaxLength(150)
   correo_encargado!: string;
 
@@ -90,7 +57,9 @@ export class CreateEncargadoDto {
     example: '8888-8888',
   })
   @IsString()
-  @IsNotEmpty()
-  @MaxLength(20)
+  @IsNotEmpty({
+    message: 'El teléfono es obligatorio.',
+  })
+  @MaxLength(50)
   telefono_encargado!: string;
 }
