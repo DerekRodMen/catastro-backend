@@ -3,9 +3,9 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { ConvenioController } from './convenio.controller';
 import { ConvenioService } from './convenio.service';
-
 import { Convenio } from './entities/convenio.entity';
 import { Parque } from '../parque/entities/parque.entity';
+import { AuditoriaModule } from '../auditoria/auditoria.module';
 
 @Module({
   imports: [
@@ -13,16 +13,14 @@ import { Parque } from '../parque/entities/parque.entity';
       Convenio,
       Parque,
     ]),
+    AuditoriaModule,
   ],
-
   controllers: [
     ConvenioController,
   ],
-
   providers: [
     ConvenioService,
   ],
-
   exports: [
     ConvenioService,
   ],

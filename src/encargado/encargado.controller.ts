@@ -7,8 +7,13 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Req,
   UseGuards,
 } from '@nestjs/common';
+
+import type {
+  Request,
+} from 'express';
 
 import {
   EncargadoService,
@@ -26,6 +31,10 @@ import {
   JwtAuthGuard,
 } from '../auth/guards/jwt-auth.guard';
 
+import type {
+  UsuarioAuditoria,
+} from '../auditoria/interfaces/usuario-auditoria.interface';
+
 @Controller('encargados')
 @UseGuards(JwtAuthGuard)
 export class EncargadoController {
@@ -39,9 +48,16 @@ export class EncargadoController {
     @Body()
     createEncargadoDto:
       CreateEncargadoDto,
+
+    @Req()
+    request:
+      Request & {
+        user: UsuarioAuditoria;
+      },
   ) {
     return this.encargadoService.create(
       createEncargadoDto,
+      request.user,
     );
   }
 
@@ -74,10 +90,17 @@ export class EncargadoController {
     @Body()
     updateEncargadoDto:
       UpdateEncargadoDto,
+
+    @Req()
+    request:
+      Request & {
+        user: UsuarioAuditoria;
+      },
   ) {
     return this.encargadoService.update(
       id,
       updateEncargadoDto,
+      request.user,
     );
   }
 
@@ -88,9 +111,16 @@ export class EncargadoController {
       ParseIntPipe,
     )
     id: number,
+
+    @Req()
+    request:
+      Request & {
+        user: UsuarioAuditoria;
+      },
   ) {
     return this.encargadoService.remove(
       id,
+      request.user,
     );
   }
 }

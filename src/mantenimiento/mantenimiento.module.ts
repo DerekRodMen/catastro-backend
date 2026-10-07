@@ -1,30 +1,12 @@
-import {
-  Module,
-} from '@nestjs/common';
+import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
 
-import {
-  TypeOrmModule,
-} from '@nestjs/typeorm';
-
-import {
-  Parque,
-} from '../parque/entities/parque.entity';
-
-import {
-  Mantenimiento,
-} from './entities/mantenimiento.entity';
-
-import {
-  MantenimientoImagen,
-} from './entities/mantenimiento-imagen.entity';
-
-import {
-  MantenimientoController,
-} from './mantenimiento.controller';
-
-import {
-  MantenimientoService,
-} from './mantenimiento.service';
+import { MantenimientoController } from './mantenimiento.controller';
+import { MantenimientoService } from './mantenimiento.service';
+import { Mantenimiento } from './entities/mantenimiento.entity';
+import { MantenimientoImagen } from './entities/mantenimiento-imagen.entity';
+import { Parque } from '../parque/entities/parque.entity';
+import { AuditoriaModule } from '../auditoria/auditoria.module';
 
 @Module({
   imports: [
@@ -33,16 +15,14 @@ import {
       MantenimientoImagen,
       Parque,
     ]),
+    AuditoriaModule,
   ],
-
   controllers: [
     MantenimientoController,
   ],
-
   providers: [
     MantenimientoService,
   ],
-
   exports: [
     MantenimientoService,
   ],

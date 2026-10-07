@@ -1,26 +1,11 @@
-import {
-  Module,
-} from '@nestjs/common';
+import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
 
-import {
-  TypeOrmModule,
-} from '@nestjs/typeorm';
-
-import {
-  Declaracion,
-} from './entities/declaracion.entity';
-
-import {
-  Parque,
-} from '../parque/entities/parque.entity';
-
-import {
-  DeclaracionController,
-} from './declaracion.controller';
-
-import {
-  DeclaracionService,
-} from './declaracion.service';
+import { DeclaracionController } from './declaracion.controller';
+import { DeclaracionService } from './declaracion.service';
+import { Declaracion } from './entities/declaracion.entity';
+import { Parque } from '../parque/entities/parque.entity';
+import { AuditoriaModule } from '../auditoria/auditoria.module';
 
 @Module({
   imports: [
@@ -28,16 +13,14 @@ import {
       Declaracion,
       Parque,
     ]),
+    AuditoriaModule,
   ],
-
   controllers: [
     DeclaracionController,
   ],
-
   providers: [
     DeclaracionService,
   ],
-
   exports: [
     DeclaracionService,
   ],

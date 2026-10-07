@@ -26,13 +26,93 @@ import {
   UpdateEncargadoDto,
 } from './dto/update-encargado.dto';
 
+import {
+  AuditoriaService,
+} from '../auditoria/auditoria.service';
+
+import type {
+  UsuarioAuditoria,
+} from '../auditoria/interfaces/usuario-auditoria.interface';
+
 @Injectable()
 export class EncargadoService {
   constructor(
     @InjectRepository(Encargado)
     private readonly encargadoRepository:
       Repository<Encargado>,
+
+    private readonly auditoriaService:
+      AuditoriaService,
   ) {}
+
+  private obtenerDatosAuditoria(
+    encargado: Encargado,
+  ): Record<string, unknown> {
+    return {
+      id_encargado:
+        encargado.id_encargado,
+
+      entidad_encargada:
+        encargado.entidad_encargada,
+
+      cedula_juridica:
+        encargado.cedula_juridica,
+
+      representante_legal:
+        encargado.representante_legal,
+
+      correo_encargado:
+        encargado.correo_encargado,
+
+      telefono_encargado:
+        encargado.telefono_encargado,
+    };
+  }
+
+  private async registrarAuditoria(
+    usuario: UsuarioAuditoria,
+    accion: string,
+    idRegistro: number,
+    descripcion: string,
+    datosAnteriores?:
+      Record<string, unknown> | null,
+    datosNuevos?:
+      Record<string, unknown> | null,
+  ): Promise<void> {
+    try {
+      await this.auditoriaService.registrar({
+        id_usuario:
+          usuario.id_usuario,
+
+        nombre_usuario:
+          usuario.nombre_usuario,
+
+        correo_usuario:
+          usuario.correo,
+
+        modulo:
+          'ENCARGADOS',
+
+        accion,
+
+        id_registro:
+          idRegistro,
+
+        descripcion,
+
+        datos_anteriores:
+          datosAnteriores ?? null,
+
+        datos_nuevos:
+          datosNuevos ?? null,
+      });
+    } catch (error) {
+      console.error(
+        'Error registrando auditoría de encargados:',
+        error,
+      );
+    }
+  }
 
   // ============================================
   // CREAR
@@ -41,6 +121,7 @@ export class EncargadoService {
   async create(
     createEncargadoDto:
       CreateEncargadoDto,
+    usuario: UsuarioAuditoria,
   ): Promise<Encargado> {
     const correo =
       createEncargadoDto.correo_encargado
@@ -50,7 +131,8 @@ export class EncargadoService {
     const existente =
       await this.encargadoRepository.findOne({
         where: {
-          correo_encargado: correo,
+          correo_encargado:
+            correo,
         },
       });
 
@@ -87,9 +169,23 @@ export class EncargadoService {
             .trim(),
       });
 
-    return await this.encargadoRepository.save(
-      encargado,
+    const guardado =
+      await this.encargadoRepository.save(
+        encargado,
+      );
+
+    await this.registrarAuditoria(
+      usuario,
+      'CREAR',
+      guardado.id_encargado,
+      `Se creó el encargado "${guardado.entidad_encargada}".`,
+      null,
+      this.obtenerDatosAuditoria(
+        guardado,
+      ),
     );
+
+    return guardado;
   }
 
   // ============================================
@@ -138,13 +234,15 @@ export class EncargadoService {
     id: number,
     updateEncargadoDto:
       UpdateEncargadoDto,
+    usuario: UsuarioAuditoria,
   ): Promise<Encargado> {
     const encargado =
       await this.findOne(id);
 
-    // ============================================
-    // ENTIDAD ENCARGADA
-    // ============================================
+    const datosAnteriores =
+      this.obtenerDatosAuditoria(
+        encargado,
+      );
 
     if (
       updateEncargadoDto
@@ -156,10 +254,6 @@ export class EncargadoService {
           .entidad_encargada
           .trim();
     }
-
-    // ============================================
-    // CÉDULA JURÍDICA
-    // ============================================
 
     if (
       updateEncargadoDto
@@ -173,10 +267,6 @@ export class EncargadoService {
         null;
     }
 
-    // ============================================
-    // REPRESENTANTE LEGAL
-    // ============================================
-
     if (
       updateEncargadoDto
         .representante_legal !==
@@ -187,10 +277,6 @@ export class EncargadoService {
           .representante_legal
           .trim();
     }
-
-    // ============================================
-    // CORREO
-    // ============================================
 
     if (
       updateEncargadoDto
@@ -225,10 +311,6 @@ export class EncargadoService {
         correo;
     }
 
-    // ============================================
-    // TELÉFONO
-    // ============================================
-
     if (
       updateEncargadoDto
         .telefono_encargado !==
@@ -240,9 +322,23 @@ export class EncargadoService {
           .trim();
     }
 
-    return await this.encargadoRepository.save(
-      encargado,
+    const guardado =
+      await this.encargadoRepository.save(
+        encargado,
+      );
+
+    await this.registrarAuditoria(
+      usuario,
+      'EDITAR',
+      guardado.id_encargado,
+      `Se modificó el encargado "${guardado.entidad_encargada}".`,
+      datosAnteriores,
+      this.obtenerDatosAuditoria(
+        guardado,
+      ),
     );
+
+    return guardado;
   }
 
   // ============================================
@@ -251,15 +347,36 @@ export class EncargadoService {
 
   async remove(
     id: number,
+    usuario: UsuarioAuditoria,
   ): Promise<{
     message: string;
   }> {
     const encargado =
       await this.findOne(id);
 
+    const datosAnteriores =
+      this.obtenerDatosAuditoria(
+        encargado,
+      );
+
+    const idEncargado =
+      encargado.id_encargado;
+
+    const nombreEncargado =
+      encargado.entidad_encargada;
+
     try {
       await this.encargadoRepository.remove(
         encargado,
+      );
+
+      await this.registrarAuditoria(
+        usuario,
+        'ELIMINAR',
+        idEncargado,
+        `Se eliminó el encargado "${nombreEncargado}".`,
+        datosAnteriores,
+        null,
       );
 
       return {
@@ -267,15 +384,6 @@ export class EncargadoService {
           'Encargado eliminado correctamente.',
       };
     } catch (error) {
-      /*
-       * SQL Server:
-       * 547 = conflicto con FOREIGN KEY.
-       *
-       * Por ejemplo:
-       * el encargado está relacionado
-       * con uno o más parques.
-       */
-
       if (
         error instanceof
           QueryFailedError

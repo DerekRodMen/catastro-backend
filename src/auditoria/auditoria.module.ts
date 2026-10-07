@@ -1,6 +1,11 @@
 import {
+  Global,
   Module,
 } from '@nestjs/common';
+
+import {
+  APP_INTERCEPTOR,
+} from '@nestjs/core';
 
 import {
   TypeOrmModule,
@@ -18,7 +23,12 @@ import {
   AuditoriaService,
 } from './auditoria.service';
 
+import {
+  AuditoriaCambiosInterceptor,
+} from './auditoria-cambios.interceptor';
 
+
+@Global()
 @Module({
   imports: [
     TypeOrmModule.forFeature([
@@ -32,6 +42,14 @@ import {
 
   providers: [
     AuditoriaService,
+
+    {
+      provide:
+        APP_INTERCEPTOR,
+
+      useClass:
+        AuditoriaCambiosInterceptor,
+    },
   ],
 
   exports: [

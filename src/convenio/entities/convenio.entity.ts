@@ -50,6 +50,41 @@ export class Convenio {
   })
   estado_convenio!: string;
 
+  @Column({
+    name: 'documento_nombre_original',
+    type: 'nvarchar',
+    length: 255,
+    nullable: true,
+  })
+  documento_nombre_original!:
+    string | null;
+
+  @Column({
+    name: 'documento_ruta',
+    type: 'nvarchar',
+    length: 500,
+    nullable: true,
+  })
+  documento_ruta!:
+    string | null;
+
+  @Column({
+    name: 'documento_mime',
+    type: 'varchar',
+    length: 100,
+    nullable: true,
+  })
+  documento_mime!:
+    string | null;
+
+  @Column({
+    name: 'documento_tamano',
+    type: 'int',
+    nullable: true,
+  })
+  documento_tamano!:
+    number | null;
+
   @ManyToOne(
     () => Parque,
     (parque) => parque.convenios,

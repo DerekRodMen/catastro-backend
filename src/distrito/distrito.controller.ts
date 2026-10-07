@@ -7,32 +7,62 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 
-import { ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 
-import { DistritoService } from './distrito.service';
+import type {
+  Request,
+} from 'express';
 
-import { CreateDistritoDto } from './dto/create-distrito.dto';
-import { UpdateDistritoDto } from './dto/update-distrito.dto';
+import {
+  DistritoService,
+} from './distrito.service';
 
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import {
+  CreateDistritoDto,
+} from './dto/create-distrito.dto';
+
+import {
+  UpdateDistritoDto,
+} from './dto/update-distrito.dto';
+
+import {
+  JwtAuthGuard,
+} from '../auth/guards/jwt-auth.guard';
+
+import type {
+  UsuarioAuditoria,
+} from '../auditoria/interfaces/usuario-auditoria.interface';
 
 @ApiBearerAuth('access-token')
 @Controller('distritos')
 export class DistritoController {
   constructor(
-    private readonly distritoService: DistritoService,
+    private readonly distritoService:
+      DistritoService,
   ) {}
 
   @Post()
   @UseGuards(JwtAuthGuard)
   create(
-    @Body() createDistritoDto: CreateDistritoDto,
+    @Body()
+    createDistritoDto:
+      CreateDistritoDto,
+
+    @Req()
+    request:
+      Request & {
+        user: UsuarioAuditoria;
+      },
   ) {
     return this.distritoService.create(
       createDistritoDto,
+      request.user,
     );
   }
 
@@ -43,28 +73,61 @@ export class DistritoController {
 
   @Get(':id')
   findOne(
-    @Param('id', ParseIntPipe) id: number,
+    @Param(
+      'id',
+      ParseIntPipe,
+    )
+    id: number,
   ) {
-    return this.distritoService.findOne(id);
+    return this.distritoService.findOne(
+      id,
+    );
   }
 
   @Patch(':id')
   @UseGuards(JwtAuthGuard)
   update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() updateDistritoDto: UpdateDistritoDto,
+    @Param(
+      'id',
+      ParseIntPipe,
+    )
+    id: number,
+
+    @Body()
+    updateDistritoDto:
+      UpdateDistritoDto,
+
+    @Req()
+    request:
+      Request & {
+        user: UsuarioAuditoria;
+      },
   ) {
     return this.distritoService.update(
       id,
       updateDistritoDto,
+      request.user,
     );
   }
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard)
   remove(
-    @Param('id', ParseIntPipe) id: number,
+    @Param(
+      'id',
+      ParseIntPipe,
+    )
+    id: number,
+
+    @Req()
+    request:
+      Request & {
+        user: UsuarioAuditoria;
+      },
   ) {
-    return this.distritoService.remove(id);
+    return this.distritoService.remove(
+      id,
+      request.user,
+    );
   }
 }
